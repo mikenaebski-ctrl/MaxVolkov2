@@ -61,7 +61,8 @@ class DirectDependencyOutputTests(MavenRepoCase):
 
     def test_test_repository(self) -> None:
         """Direct dependencies of A come from the test file."""
-        code, out, _ = run_cli(["--config", self.write_config()])
+        path = self.write_config()
+        code, out, _ = run_cli(["--direct", "--config", path])
         self.assertEqual(code, 0)
         self.assertEqual(
             out.splitlines(),
@@ -71,7 +72,7 @@ class DirectDependencyOutputTests(MavenRepoCase):
     def test_leaf_package_has_no_dependencies(self) -> None:
         """A leaf prints (none)."""
         path = self.write_config(package_name="D")
-        _, out, _ = run_cli(["--config", path])
+        _, out, _ = run_cli(["--direct", "--config", path])
         self.assertIn("(none)", out)
 
     def test_unknown_package_is_an_error(self) -> None:
@@ -90,7 +91,7 @@ class DirectDependencyOutputTests(MavenRepoCase):
             package_name="org.x:lib",
             package_version="1.0",
         )
-        code, out, _ = run_cli(["--config", path])
+        code, out, _ = run_cli(["--direct", "--config", path])
         self.assertEqual(code, 0)
         self.assertIn("Direct dependencies of org.x:lib:1.0:", out)
         self.assertIn("  - g:a:1.5", out)
@@ -105,3 +106,54 @@ class DirectDependencyOutputTests(MavenRepoCase):
         code, _, err = run_cli(["--config", path])
         self.assertEqual(code, 1)
         self.assertIn("was not found", err)
+
+
+class GraphOutputTests(MavenRepoCase):
+    """The stage 3 behaviour: print the whole graph."""
+
+    def test_tree_and_summary(self) -> None:
+        """The tree, the legend and the summary are printed."""
+        path = self.write_config(max_depth="2")
+        code, out, _ = run_cli(["--config", path])
+        self.assertEqual(code, 0)
+        lines = out.splitlines()
+        self.assertEqual(lines[0], "A")
+        self.assertIn("├── B", lines)
+        self.assertTrue(lines[-1].startswith("Packages: "))
+
+    def test_tree_can_be_disabled(self) -> None:
+        """With ascii_tree=false only the summary is printed."""
+        path = self.write_config(ascii_tree="false")
+        _, out, _ = run_cli(["--config", path])
+        self.assertTrue(out.startswith("Packages: "))
+        self.assertNotIn("├", out)
+
+    def test_depth_one(self) -> None:
+        """Depth one shows only direct dependencies."""
+        path = self.write_config(max_depth="1")
+        _, out, _ = run_cli(["--config", path])
+        self.assertIn("Packages: 3, dependencies: 2", out)
+
+    def test_cycle_is_reported(self) -> None:
+        """A cyclic test repository terminates and names the cycle."""
+        repo = self.root / "cycle.txt"
+        repo.write_text("A: B\nB: A\n", encoding="utf-8")
+        path = self.write_config(repository_url=str(repo))
+        code, out, _ = run_cli(["--config", path])
+        self.assertEqual(code, 0)
+        self.assertIn("A (cycle)", out)
+        self.assertIn("cycle: A -> B -> A", out)
+
+    def test_maven_warning_goes_to_stderr(self) -> None:
+        """An unreadable transitive POM is only a warning."""
+        self.add_simple("org.x", "lib", "1.0", [("g", "gone", "1")])
+        path = self.write_config(
+            repository_mode="real",
+            repository_url=self.repo_url,
+            package_name="org.x:lib",
+            package_version="1.0",
+        )
+        code, out, err = run_cli(["--config", path])
+        self.assertEqual(code, 0)
+        self.assertIn("g:gone:1", out)
+        self.assertTrue(err.startswith("warning: "))

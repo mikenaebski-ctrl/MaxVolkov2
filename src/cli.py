@@ -5,8 +5,11 @@ import sys
 from typing import List, Optional
 
 from . import constants as c
+from .ascii_tree import tree_lines
 from .config import Config, load_config
 from .errors import ConfigError, ToolError
+from .graph import build_graph
+from .report import legend_lines, note_lines, summary_lines
 from .repository import Repository, make_repository, root_package
 
 
@@ -25,6 +28,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--show-config",
         action="store_true",
         help="only print the parameters as key: value (stage 1)",
+    )
+    parser.add_argument(
+        "--direct",
+        action="store_true",
+        help="only print the direct dependencies (stage 2)",
     )
     return parser
 
@@ -55,13 +63,38 @@ def show_direct(config: Config, repository: Repository) -> None:
     print_warnings(repository)
 
 
+def print_lines(lines: List[str]) -> None:
+    """Print each line on its own row."""
+    for line in lines:
+        print(line)
+
+
+def show_graph(config: Config, repository: Repository) -> None:
+    """Build the whole graph and print it (stage 3)."""
+    package = root_package(config)
+    repository.check_root(package)
+    graph = build_graph(repository, package, config.max_depth)
+    if config.ascii_tree:
+        tree = tree_lines(graph)
+        print_lines(tree)
+        print_lines(legend_lines(tree))
+    print_lines(summary_lines(graph, config.max_depth))
+    print_lines(note_lines(graph))
+    for warning in graph.warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+
+
 def run(config: Config, args: argparse.Namespace) -> None:
     """Perform the action selected on the command line."""
     if args.show_config:
         for name, value in config.as_pairs():
             print(f"{name}: {value}")
         return
-    show_direct(config, make_repository(config))
+    repository = make_repository(config)
+    if args.direct:
+        show_direct(config, repository)
+    else:
+        show_graph(config, repository)
 
 
 def main(argv: Optional[List[str]] = None) -> int:
