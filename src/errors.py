@@ -22,3 +22,7 @@ class RepositoryError(ToolError):
 
 class PackageNotFoundError(RepositoryError):
     """The requested package or POM file does not exist."""
+
+
+class RenderError(ToolError):
+    """The PlantUML text could not be turned into a PNG image."""

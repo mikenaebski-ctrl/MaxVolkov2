@@ -61,3 +61,13 @@ INDENT_BAR = "│   "
 INDENT_BLANK = "    "
 MARK_CYCLE = " (cycle)"
 MARK_REPEAT = " (*)"
+
+PLANTUML_ALPHABET = (
+    "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_"
+)
+PLANTUML_START = "@startuml"
+PLANTUML_END = "@enduml"
+PLANTUML_CYCLE_ARROW = "-[#red]->"
+PLANTUML_ARROW = "-->"
+PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
+RENDER_TIMEOUT = 120

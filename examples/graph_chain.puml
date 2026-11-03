@@ -1,0 +1,8 @@
+@startuml
+skinparam componentStyle rectangle
+component "A" as n0
+component "B" as n1
+component "C" as n2
+n0 --> n1
+n1 --> n2
+@enduml

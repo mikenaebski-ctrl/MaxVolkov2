@@ -10,23 +10,16 @@ from .config import Config, load_config
 from .errors import ConfigError, ToolError
 from .graph import Graph, build_graph
 from .order import load_order
+from .plantuml import plantuml_text
 from .report import (
     legend_lines, note_lines, order_lines, summary_lines
 )
+from .render import render_png, save_files
 from .repository import Repository, make_repository, root_package
 
 
-def build_parser() -> argparse.ArgumentParser:
-    """Create the argument parser."""
-    parser = argparse.ArgumentParser(
-        prog="python3 -m src",
-        description="Visualize the dependency graph of a Maven package.",
-    )
-    parser.add_argument(
-        "--config",
-        default=c.DEFAULT_CONFIG,
-        help="CSV file with the parameters (default: %(default)s)",
-    )
+def add_stage_options(parser: argparse.ArgumentParser) -> None:
+    """Add the options that select what the tool prints."""
     parser.add_argument(
         "--show-config",
         action="store_true",
@@ -42,6 +35,41 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="only print the order of loading the dependencies (stage 4)",
     )
+    parser.add_argument(
+        "--plantuml",
+        action="store_true",
+        help="only print the PlantUML text of the graph (stage 5)",
+    )
+
+
+def add_render_options(parser: argparse.ArgumentParser) -> None:
+    """Add the options that select the PNG renderer."""
+    parser.add_argument(
+        "--plantuml-jar",
+        metavar="FILE",
+        help="render the PNG with java -jar FILE (stage 5)",
+    )
+    parser.add_argument(
+        "--plantuml-server",
+        metavar="URL",
+        help="render the PNG with a PlantUML server, "
+        "e.g. https://www.plantuml.com/plantuml (stage 5)",
+    )
+
+
+def build_parser() -> argparse.ArgumentParser:
+    """Create the argument parser."""
+    parser = argparse.ArgumentParser(
+        prog="python3 -m src",
+        description="Visualize the dependency graph of a Maven package.",
+    )
+    parser.add_argument(
+        "--config",
+        default=c.DEFAULT_CONFIG,
+        help="CSV file with the parameters (default: %(default)s)",
+    )
+    add_stage_options(parser)
+    add_render_options(parser)
     return parser
 
 
@@ -110,6 +138,24 @@ def show_order(config: Config, repository: Repository) -> None:
     print_graph_warnings(graph)
 
 
+def show_plantuml(
+    config: Config, repository: Repository, args: argparse.Namespace
+) -> None:
+    """Print the PlantUML text and/or render the PNG (stage 5)."""
+    graph = make_graph(config, repository)
+    text = plantuml_text(graph)
+    if args.plantuml:
+        print(text, end="")
+    if args.plantuml_jar or args.plantuml_server:
+        if config.ascii_tree and not args.plantuml:
+            print_lines(tree_lines(graph))
+        png = render_png(text, args.plantuml_jar, args.plantuml_server)
+        source = save_files(text, png, config.output_image)
+        print(f"Image saved: {config.output_image}")
+        print(f"PlantUML source saved: {source}")
+    print_graph_warnings(graph)
+
+
 def run(config: Config, args: argparse.Namespace) -> None:
     """Perform the action selected on the command line."""
     if args.show_config:
@@ -121,6 +167,8 @@ def run(config: Config, args: argparse.Namespace) -> None:
         show_direct(config, repository)
     elif args.load_order:
         show_order(config, repository)
+    elif args.plantuml or args.plantuml_jar or args.plantuml_server:
+        show_plantuml(config, repository, args)
     else:
         show_graph(config, repository)
 
