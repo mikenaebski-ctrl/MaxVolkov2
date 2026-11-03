@@ -14,3 +14,11 @@ class ConfigError(ToolError):
         """Keep every detected problem so all of them can be reported."""
         super().__init__("; ".join(problems))
         self.problems = list(problems)
+
+
+class RepositoryError(ToolError):
+    """A package repository cannot be read or has invalid contents."""
+
+
+class PackageNotFoundError(RepositoryError):
+    """The requested package or POM file does not exist."""

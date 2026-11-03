@@ -5,6 +5,7 @@ import io
 from typing import List, Tuple
 
 from src.cli import main
+from tests.maven_support import MavenRepoCase
 from tests.support import WorkspaceCase
 
 
@@ -24,7 +25,8 @@ class ParameterOutputTests(WorkspaceCase):
 
     def test_prints_every_parameter(self) -> None:
         """All seven parameters are printed in key: value form."""
-        code, out, _ = run_cli(["--config", self.write_config()])
+        path = self.write_config()
+        code, out, _ = run_cli(["--show-config", "--config", path])
         self.assertEqual(code, 0)
         lines = out.splitlines()
         self.assertEqual(len(lines), 7)
@@ -52,3 +54,54 @@ class ParameterOutputTests(WorkspaceCase):
         code, _, err = run_cli(["--bogus"])
         self.assertEqual(code, 2)
         self.assertIn("unrecognized arguments", err)
+
+
+class DirectDependencyOutputTests(MavenRepoCase):
+    """The stage 2 behaviour: print the direct dependencies."""
+
+    def test_test_repository(self) -> None:
+        """Direct dependencies of A come from the test file."""
+        code, out, _ = run_cli(["--config", self.write_config()])
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            out.splitlines(),
+            ["Direct dependencies of A:", "  - B", "  - C"],
+        )
+
+    def test_leaf_package_has_no_dependencies(self) -> None:
+        """A leaf prints (none)."""
+        path = self.write_config(package_name="D")
+        _, out, _ = run_cli(["--config", path])
+        self.assertIn("(none)", out)
+
+    def test_unknown_package_is_an_error(self) -> None:
+        """A package missing from the test repository exits with 1."""
+        path = self.write_config(package_name="Z")
+        code, out, err = run_cli(["--config", path])
+        self.assertEqual((code, out), (1, ""))
+        self.assertIn("not in the test repository", err)
+
+    def test_maven_file_repository(self) -> None:
+        """The real mode reads POM files through a file:// URL."""
+        self.add_simple("org.x", "lib", "1.0", [("g", "a", "1.5")])
+        path = self.write_config(
+            repository_mode="real",
+            repository_url=self.repo_url,
+            package_name="org.x:lib",
+            package_version="1.0",
+        )
+        code, out, _ = run_cli(["--config", path])
+        self.assertEqual(code, 0)
+        self.assertIn("Direct dependencies of org.x:lib:1.0:", out)
+        self.assertIn("  - g:a:1.5", out)
+
+    def test_maven_package_not_found(self) -> None:
+        """A missing Maven package is a clean error."""
+        path = self.write_config(
+            repository_mode="real",
+            repository_url=self.repo_url,
+            package_name="org.x:none",
+        )
+        code, _, err = run_cli(["--config", path])
+        self.assertEqual(code, 1)
+        self.assertIn("was not found", err)
