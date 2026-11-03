@@ -1,0 +1,7 @@
+# A long chain, useful for checking the depth limit.
+A: B
+B: C
+C: D
+D: E
+E: F
+F:

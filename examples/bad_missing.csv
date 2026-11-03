@@ -1,0 +1,7 @@
+parameter,value
+package_name,A
+repository_url,examples/no_such_repo.txt
+repository_mode,test
+colour,red
+max_depth,3
+max_depth,4

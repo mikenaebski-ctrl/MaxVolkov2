@@ -1,0 +1,8 @@
+parameter,value
+package_name,org.slf4j:slf4j-simple
+repository_url,https://repo1.maven.org/maven2/
+repository_mode,real
+package_version,2.0.9
+output_image,slf4j-simple.png
+ascii_tree,true
+max_depth,3

@@ -1,0 +1,8 @@
+parameter,value
+package_name,com.fasterxml.jackson.core:jackson-databind
+repository_url,https://repo1.maven.org/maven2/
+repository_mode,real
+package_version,2.16.0
+output_image,jackson-databind.png
+ascii_tree,true
+max_depth,3

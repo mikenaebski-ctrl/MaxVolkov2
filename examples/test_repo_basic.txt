@@ -1,0 +1,8 @@
+# Test repository: "PACKAGE: DEPENDENCY DEPENDENCY ..."
+# Package names are capital Latin letters.
+A: B C
+B: D
+C: D E
+D: F
+E: F
+F:

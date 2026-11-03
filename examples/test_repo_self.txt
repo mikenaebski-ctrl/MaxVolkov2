@@ -1,0 +1,3 @@
+# A package that depends on itself and on a package that depends back.
+A: A B
+B: A

@@ -1,0 +1,8 @@
+parameter,value
+package_name,a1
+repository_url,ftp://example.org/m2
+repository_mode,real
+package_version,1 2
+output_image,graph.jpg
+ascii_tree,maybe
+max_depth,0

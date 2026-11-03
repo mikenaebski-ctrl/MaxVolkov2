@@ -1,0 +1,5 @@
+# A cycle A -> B -> C -> A and a side branch to D.
+A: B
+B: C
+C: A D
+D:

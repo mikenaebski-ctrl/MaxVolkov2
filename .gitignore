@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.png
+*.zip
+*.jar
+*.bundle
+.idea/
+.vscode/
+.DS_Store
+.venv/
+venv/
+build/
+dist/
+*.egg-info/

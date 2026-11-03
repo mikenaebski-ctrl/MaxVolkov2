@@ -1,0 +1,8 @@
+parameter,value
+package_name,A
+repository_url,examples/test_repo_cycle.txt
+repository_mode,test
+package_version,1.0
+output_image,cycle.png
+ascii_tree,true
+max_depth,5

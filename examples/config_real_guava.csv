@@ -1,0 +1,8 @@
+parameter,value
+package_name,com.google.guava:guava
+repository_url,https://repo1.maven.org/maven2/
+repository_mode,real
+package_version,33.0.0-jre
+output_image,guava.png
+ascii_tree,true
+max_depth,2
