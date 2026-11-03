@@ -37,3 +37,11 @@ def legend_lines(tree: List[str]) -> List[str]:
     if c.MARK_CYCLE in text:
         lines.append("(cycle) the package is its own ancestor")
     return lines
+
+
+def order_lines(graph: Graph, order: List[str]) -> List[str]:
+    """Return the numbered load order, one package per line."""
+    lines = ["Load order (dependencies first):"]
+    for number, key in enumerate(order, start=1):
+        lines.append(f"  {number}. {graph.nodes[key].label}")
+    return lines

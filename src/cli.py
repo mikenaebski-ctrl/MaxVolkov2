@@ -8,8 +8,11 @@ from . import constants as c
 from .ascii_tree import tree_lines
 from .config import Config, load_config
 from .errors import ConfigError, ToolError
-from .graph import build_graph
-from .report import legend_lines, note_lines, summary_lines
+from .graph import Graph, build_graph
+from .order import load_order
+from .report import (
+    legend_lines, note_lines, order_lines, summary_lines
+)
 from .repository import Repository, make_repository, root_package
 
 
@@ -33,6 +36,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--direct",
         action="store_true",
         help="only print the direct dependencies (stage 2)",
+    )
+    parser.add_argument(
+        "--load-order",
+        action="store_true",
+        help="only print the order of loading the dependencies (stage 4)",
     )
     return parser
 
@@ -69,19 +77,37 @@ def print_lines(lines: List[str]) -> None:
         print(line)
 
 
-def show_graph(config: Config, repository: Repository) -> None:
-    """Build the whole graph and print it (stage 3)."""
+def make_graph(config: Config, repository: Repository) -> Graph:
+    """Check the root package and build the dependency graph."""
     package = root_package(config)
     repository.check_root(package)
-    graph = build_graph(repository, package, config.max_depth)
+    return build_graph(repository, package, config.max_depth)
+
+
+def print_graph_warnings(graph: Graph) -> None:
+    """Print the non-fatal problems met while building the graph."""
+    for warning in graph.warnings:
+        print(f"warning: {warning}", file=sys.stderr)
+
+
+def show_graph(config: Config, repository: Repository) -> None:
+    """Build the whole graph and print it (stage 3)."""
+    graph = make_graph(config, repository)
     if config.ascii_tree:
         tree = tree_lines(graph)
         print_lines(tree)
         print_lines(legend_lines(tree))
     print_lines(summary_lines(graph, config.max_depth))
     print_lines(note_lines(graph))
-    for warning in graph.warnings:
-        print(f"warning: {warning}", file=sys.stderr)
+    print_graph_warnings(graph)
+
+
+def show_order(config: Config, repository: Repository) -> None:
+    """Build the graph and print the dependency load order (stage 4)."""
+    graph = make_graph(config, repository)
+    print_lines(order_lines(graph, load_order(graph)))
+    print_lines(note_lines(graph))
+    print_graph_warnings(graph)
 
 
 def run(config: Config, args: argparse.Namespace) -> None:
@@ -93,6 +119,8 @@ def run(config: Config, args: argparse.Namespace) -> None:
     repository = make_repository(config)
     if args.direct:
         show_direct(config, repository)
+    elif args.load_order:
+        show_order(config, repository)
     else:
         show_graph(config, repository)
 
